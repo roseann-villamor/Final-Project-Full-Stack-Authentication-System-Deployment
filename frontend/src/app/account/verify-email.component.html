@@ -1,0 +1,16 @@
+<div>
+    <div *ngIf="emailStatus === EmailStatus.Verifying" class="text-center">
+        <span class="spinner-border spinner-border-lg align-center"></span>
+        <p class="mt-2">Verifying email...</p>
+    </div>
+    <div *ngIf="emailStatus === EmailStatus.Success" class="text-center">
+        <h4>Email verified!</h4>
+        <p>Verification successful, you can now login.</p>
+        <a routerLink="../login" class="btn btn-primary">Login</a>
+    </div>
+    <div *ngIf="emailStatus === EmailStatus.Failed" class="text-center">
+        <h4>Verification Failed</h4>
+        <p>Verification token is invalid or has expired.</p>
+        <a routerLink="../login" class="btn btn-primary">Login</a>
+    </div>
+</div>

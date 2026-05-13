@@ -1,0 +1,38 @@
+# Render Blueprint — Backend API
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: auth-system-backend
+    runtime: node
+    region: singapore   # closest to PH
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: EMAIL_FROM
+        value: noreply@authsystem.com
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: CORS_ORIGIN
+        sync: false
+      - key: NODE_ENV
+        value: production

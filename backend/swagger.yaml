@@ -1,0 +1,409 @@
+openapi: 3.0.0
+info:
+  title: Auth System API
+  description: JWT authentication system API with refresh tokens, email verification, and role-based access control.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:4000
+    description: Local development server
+
+paths:
+  /api/accounts/authenticate:
+    post:
+      summary: Authenticate (Login)
+      description: Authenticates user credentials and returns a JWT token (15min). A refresh token (7d) is set as an httpOnly cookie.
+      operationId: authenticate
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: admin@example.com
+                password:
+                  type: string
+                  example: Admin123!
+      responses:
+        '200':
+          description: Account details and JWT token
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccountResponse'
+                  - type: object
+                    properties:
+                      jwtToken:
+                        type: string
+        '400':
+          description: Email or password is incorrect
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/accounts/register:
+    post:
+      summary: Register
+      description: Creates a new account and sends a verification email.
+      operationId: register
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, email, password, confirmPassword]
+              properties:
+                firstName:
+                  type: string
+                  example: John
+                lastName:
+                  type: string
+                  example: Doe
+                email:
+                  type: string
+                  example: john@example.com
+                password:
+                  type: string
+                  example: Pass123!
+                confirmPassword:
+                  type: string
+                  example: Pass123!
+      responses:
+        '200':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/accounts/verify-email:
+    post:
+      summary: Verify Email
+      description: Verifies an account email using the token sent during registration.
+      operationId: verifyEmail
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Verification successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/accounts/refresh-token:
+    post:
+      summary: Refresh Token
+      description: Uses the refresh token cookie to generate a new JWT (15min) and rotate the refresh token (7d).
+      operationId: refreshToken
+      tags: [Authentication]
+      responses:
+        '200':
+          description: New JWT and rotated refresh token
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/AccountResponse'
+                  - type: object
+                    properties:
+                      jwtToken:
+                        type: string
+        '400':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/accounts/revoke-token:
+    post:
+      summary: Revoke Token
+      description: Revokes a refresh token. Users can revoke their own tokens, admins can revoke any.
+      operationId: revokeToken
+      tags: [Authentication]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+      responses:
+        '200':
+          description: Token revoked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/accounts/forgot-password:
+    post:
+      summary: Forgot Password
+      description: Generates a reset token and sends a password reset email.
+      operationId: forgotPassword
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  example: john@example.com
+      responses:
+        '200':
+          description: Check email for reset instructions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+  /api/accounts/reset-password:
+    post:
+      summary: Reset Password
+      description: Validates the reset token and updates the password hash.
+      operationId: resetPassword
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password, confirmPassword]
+              properties:
+                token:
+                  type: string
+                password:
+                  type: string
+                  example: NewPass123!
+                confirmPassword:
+                  type: string
+                  example: NewPass123!
+      responses:
+        '200':
+          description: Password reset successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+        '400':
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/accounts:
+    get:
+      summary: Get All Accounts (Admin)
+      description: Returns a list of all accounts. Admin only.
+      operationId: getAll
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AccountResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create Account (Admin)
+      description: Creates a new account (pre-verified). Admin only.
+      operationId: create
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [firstName, lastName, email, password, confirmPassword, role]
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                confirmPassword:
+                  type: string
+                role:
+                  type: string
+                  enum: [Admin, User]
+      responses:
+        '200':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+
+  /api/accounts/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: integer
+    get:
+      summary: Get Account by ID
+      description: Returns account details. Users can access their own, admins can access any.
+      operationId: getById
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+        '404':
+          description: Account not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update Account
+      description: Updates an account. Users can update their own, admins can update any.
+      operationId: update
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+                confirmPassword:
+                  type: string
+                role:
+                  type: string
+                  enum: [Admin, User]
+      responses:
+        '200':
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AccountResponse'
+    delete:
+      summary: Delete Account
+      description: Deletes an account. Users can delete their own, admins can delete any.
+      operationId: delete
+      tags: [Accounts]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AccountResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [Admin, User]
+        isVerified:
+          type: boolean
+        created:
+          type: string
+          format: date-time
+        updated:
+          type: string
+          format: date-time
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
