@@ -12,10 +12,14 @@ async function sendEmail({ to, subject, html, from }) {
         }
     });
 
-    await transporter.sendMail({
-        from: from || process.env.EMAIL_FROM,
-        to,
-        subject,
-        html
-    });
+    try {
+        await transporter.sendMail({
+            from: from || process.env.EMAIL_FROM,
+            to,
+            subject,
+            html
+        });
+    } catch (err) {
+        console.error('Email send failed:', err.message);
+    }
 }
