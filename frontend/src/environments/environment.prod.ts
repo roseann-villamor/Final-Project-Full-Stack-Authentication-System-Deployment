@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://YOUR-BACKEND.onrender.com/api'
+    apiUrl: 'https://final-project-full-stack-authentication.onrender.com/api'
 };
