@@ -10,16 +10,18 @@ A production-ready JWT authentication system built with **Node.js + Express + My
 
 | Service | URL |
 |---------|-----|
-| **Frontend** | [https://YOUR-FRONTEND.onrender.com](https://YOUR-FRONTEND.onrender.com) |
-| **Backend API Docs** | [https://YOUR-BACKEND.onrender.com/api-docs](https://YOUR-BACKEND.onrender.com/api-docs) |
-| **Health Check** | [https://YOUR-BACKEND.onrender.com/health](https://YOUR-BACKEND.onrender.com/health) |
+| **Frontend** | [https://villamor-frontend.onrender.com](https://villamor-frontend.onrender.com) |
+| **Backend API Docs** | [https://final-project-full-stack-authentication.onrender.com/api-docs](https://final-project-full-stack-authentication.onrender.com/api-docs) |
+| **Health Check** | [https://final-project-full-stack-authentication.onrender.com/health](https://final-project-full-stack-authentication.onrender.com/health) |
+
+> **Note:** The backend is hosted on Render's free tier and may take 30-60 seconds to wake up after inactivity. Please visit the Health Check URL first before testing the application.
 
 ---
 
 ## ✨ Features
 
 - **JWT Authentication** — 15-minute access tokens (in-memory) + 7-day refresh tokens (httpOnly cookies)
-- **Email Verification** — Registration requires email confirmation via Nodemailer
+- **Email Verification** — Registration requires email confirmation via Brevo
 - **Forgot / Reset Password** — Token-based password reset flow with 24h expiry
 - **Role-Based Access Control** — `Admin` and `User` roles with route guards
 - **Admin Panel** — Full CRUD for user management (Admin only)
@@ -51,7 +53,7 @@ Register a new account or have the instructor seed the database.
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/YOUR-USERNAME/Final-Project-Full-Stack-Authentication-System-Deployment.git
+git clone https://github.com/roseann-villamor/Final-Project-Full-Stack-Authentication-System-Deployment.git
 cd Final-Project-Full-Stack-Authentication-System-Deployment
 ```
 
@@ -75,10 +77,7 @@ cp .env.example .env
 | `DB_PASS` | MySQL password | `yourpassword` |
 | `JWT_SECRET` | JWT signing secret | `change-me-in-production` |
 | `EMAIL_FROM` | Sender email | `noreply@authsystem.com` |
-| `SMTP_HOST` | SMTP server | `smtp.ethereal.email` |
-| `SMTP_PORT` | SMTP port | `587` |
-| `SMTP_USER` | SMTP username | _(from Ethereal)_ |
-| `SMTP_PASS` | SMTP password | _(from Ethereal)_ |
+| `BREVO_API_KEY` | Brevo API key | _(from Brevo dashboard)_ |
 | `CORS_ORIGIN` | Allowed frontend URL | `http://localhost:4200` |
 
 ```bash
@@ -124,18 +123,16 @@ To test without MySQL, enable the fake backend in `frontend/src/app/app.module.t
 
 A `render.yaml` blueprint is included for one-click deploy.
 
-### Frontend → Render (Static Site) or Netlify
+### Frontend → Render (Static Site)
 
 | Setting | Value |
 |---------|-------|
 | **Root Directory** | `frontend` |
-| **Build Command** | `ng build --configuration production` |
+| **Build Command** | `npm ci && npm run build` |
 | **Publish Directory** | `dist/auth-system-frontend/browser` |
 
 **SPA Rewrite Rule** (fixes deep-link 404s):
-- **Source:** `/*` → **Destination:** `/index.html`
-
-For Netlify, a `_redirects` file is included in `frontend/public/`.
+- **Source:** `/*` → **Destination:** `/index.html` → **Action:** `Rewrite`
 
 > **Important:** After deploying the backend, update `frontend/src/environments/environment.prod.ts` with the actual Render backend URL.
 
@@ -143,7 +140,6 @@ For Netlify, a `_redirects` file is included in `frontend/public/`.
 
 ## 📁 Project Structure
 
-```
 ├── backend/
 │   ├── server.js                    # Express entry point + /health
 │   ├── render.yaml                  # Render deployment blueprint
@@ -171,7 +167,6 @@ For Netlify, a `_redirects` file is included in `frontend/public/`.
 │           └── home/                # Dashboard
 │
 └── README.md                        # ← You are here
-```
 
 ---
 
