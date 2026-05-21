@@ -86,30 +86,21 @@ function resetPasswordSchema(req, res, next) {
 
 async function register(req, res, next) {
     try {
-        // Check if email already registered
         const existing = await db.Account.findOne({ where: { email: req.body.email } });
         if (existing) {
-            // Don't reveal that email is already registered (security)
             return res.status(200).json({
                 message: 'Registration successful, please check your email for verification instructions'
             });
         }
 
-        // Create account
         const account = new db.Account(req.body);
-
-        // Hash password
         account.passwordHash = await bcrypt.hash(req.body.password, 10);
-
-        // Generate verification token
         account.verificationToken = randomTokenString();
         account.created = new Date();
         account.role = 'User';
 
-        // Save account
         await account.save();
 
-        // Send verification email
         await sendVerificationEmail(account, req.get('origin'));
 
         res.json({
@@ -142,18 +133,15 @@ async function authenticate(req, res, next) {
     try {
         const { email, password } = req.body;
 
-        // Get account with password hash
         const account = await db.Account.scope('withHash').findOne({ where: { email } });
 
         if (!account || !account.isVerified() || !(await bcrypt.compare(password, account.passwordHash))) {
             throw new Error('Email or password is incorrect');
         }
 
-        // Authentication successful — generate JWT and refresh token
         const jwtToken = generateJwtToken(account);
         const refreshTokenObj = await generateRefreshToken(account, ipAddress(req));
 
-        // Set refresh token cookie
         setTokenCookie(res, refreshTokenObj.token);
 
         res.json({
@@ -173,17 +161,14 @@ async function refreshToken(req, res, next) {
         const refreshTokenObj = await getRefreshToken(token);
         const account = await refreshTokenObj.getAccount();
 
-        // Replace old refresh token with a new one and save
         const newRefreshToken = await generateRefreshToken(account, ipAddress(req));
         refreshTokenObj.revoked = new Date();
         refreshTokenObj.revokedByIp = ipAddress(req);
         refreshTokenObj.replacedByToken = newRefreshToken.token;
         await refreshTokenObj.save();
 
-        // Generate new JWT
         const jwtToken = generateJwtToken(account);
 
-        // Set new refresh token cookie
         setTokenCookie(res, newRefreshToken.token);
 
         res.json({
@@ -197,11 +182,9 @@ async function refreshToken(req, res, next) {
 
 async function revokeToken(req, res, next) {
     try {
-        // Accept token from request body or cookie
         const token = req.body.token || req.cookies.refreshToken;
         if (!token) throw new Error('Token is required');
 
-        // Users can revoke their own tokens and admins can revoke any tokens
         const owns = await req.user.ownsToken(token);
         if (!owns && req.user.role !== 'Admin') {
             return res.status(403).json({ message: 'Forbidden' });
@@ -222,17 +205,14 @@ async function forgotPassword(req, res, next) {
     try {
         const account = await db.Account.findOne({ where: { email: req.body.email } });
 
-        // Always return ok response to prevent email enumeration
         if (!account) {
             return res.json({ message: 'Please check your email for password reset instructions' });
         }
 
-        // Create reset token that expires after 24 hours
         account.resetToken = randomTokenString();
         account.resetTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
         await account.save();
 
-        // Send password reset email
         await sendPasswordResetEmail(account, req.get('origin'));
 
         res.json({ message: 'Please check your email for password reset instructions' });
@@ -243,10 +223,10 @@ async function forgotPassword(req, res, next) {
 
 async function validateResetToken(req, res, next) {
     try {
+        const token = req.body.token || req.query.token;
+
         const account = await db.Account.findOne({
-            where: {
-                resetToken: req.body.token,
-            }
+            where: { resetToken: token }
         });
 
         if (!account || new Date() > account.resetTokenExpires) {
@@ -269,7 +249,6 @@ async function resetPassword(req, res, next) {
             throw new Error('Invalid token');
         }
 
-        // Update password and remove reset token
         account.passwordHash = await bcrypt.hash(req.body.password, 10);
         account.resetToken = null;
         account.resetTokenExpires = null;
