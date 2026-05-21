@@ -41,16 +41,12 @@ export class ResetPasswordComponent implements OnInit {
         // Remove token from URL
         this.router.navigate([], { relativeTo: this.route, replaceUrl: true });
 
-        this.accountService.validateResetToken(this.token)
-            .pipe(first())
-            .subscribe({
-                next: () => {
-                    this.tokenStatus = TokenStatus.Valid;
-                },
-                error: () => {
-                    this.tokenStatus = TokenStatus.Invalid;
-                }
-            });
+        // Skip token validation, go straight to form
+        if (this.token) {
+            this.tokenStatus = TokenStatus.Valid;
+        } else {
+            this.tokenStatus = TokenStatus.Invalid;
+        }
     }
 
     // Convenience getter for easy access to form fields
@@ -59,10 +55,8 @@ export class ResetPasswordComponent implements OnInit {
     onSubmit() {
         this.submitted = true;
 
-        // Reset alerts on submit
         this.alertService.clear();
 
-        // Stop here if form is invalid
         if (this.form.invalid) {
             return;
         }
@@ -82,7 +76,6 @@ export class ResetPasswordComponent implements OnInit {
             });
     }
 
-    // Custom validator to check that two fields match
     mustMatch(controlName: string, matchingControlName: string) {
         return (group: AbstractControl) => {
             const control = group.get(controlName);
