@@ -97,7 +97,9 @@ async function register(req, res, next) {
         account.passwordHash = await bcrypt.hash(req.body.password, 10);
         account.verificationToken = randomTokenString();
         account.created = new Date();
-        account.role = 'User';
+        // First account is Admin, rest are Users
+        const accountCount = await db.Account.count();
+        account.role = accountCount === 0 ? 'Admin' : 'User';
 
         await account.save();
 
